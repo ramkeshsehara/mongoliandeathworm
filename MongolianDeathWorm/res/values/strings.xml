@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Monglian Death Worm</string>
+    <string name="maps_api_key">00ErKvQI1R8mPP-E11px8GJyIQt3fKOPkT6Gstg</string>
+    <string name="debug_maps_api_key">00ErKvQI1R8nHNRmG-OdphywGsab7n-uA_5LRjg</string>
+</resources>
