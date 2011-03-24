@@ -62,9 +62,9 @@ public class ContentLocation
 		int lat = json.getInt( LAT );
 		int lon = json.getInt( LON );
 		location = new GeoPoint( lat, lon );
-		size = json.getInt( SIZE );
+		size = json.optInt( SIZE );
 		name = json.getString( NAME );
-		hidden = json.getBoolean( HIDDEN );
+		hidden = json.optBoolean( HIDDEN, false );
 		content = new URL( json.getString( URL ) );
 
 		overlayItem = new OverlayItem( location, name, null );
@@ -110,6 +110,6 @@ public class ContentLocation
 	@Override
 	public String toString()
 	{
-		return name + " : " + content;
+		return name + "@" + location + " : " + content;
 	}
 }
