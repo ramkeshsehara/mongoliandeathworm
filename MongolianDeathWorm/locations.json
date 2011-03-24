@@ -1,4 +1,6 @@
 {
+	"name" : "Default",
+	"summary" : "The test set that Ryan used",
     "locations": [
 		{
             "name": "Wolfies",

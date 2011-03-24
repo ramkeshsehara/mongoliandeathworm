@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.widget.Toast;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -43,11 +44,11 @@ public class DeathwormActivity extends MapActivity
 	public int userSize = 10;
 
 	/***/
-	@Variable( "Refresh Delay" )
-	@Summary( "The delay between checking locations" )
+	@Variable( "Check Delay" )
+	@Summary( "The delay between checking locations for activation" )
 	public float refreshDelay = 3;
 
-	private ContentLocation[] locations = new ContentLocation[ 0 ];
+	private LocationFeed locations = LocationFeed.empty;
 
 	/**
 	 * Use this to schedule location checks
@@ -64,12 +65,17 @@ public class DeathwormActivity extends MapActivity
 
 			if( userLoc != null )
 			{
-				for( ContentLocation cl : locations )
+				map.getController().animateTo( userLoc );
+
+				for( ContentLocation cl : locations.locations )
 				{
 					float d = cl.distance( userLoc );
 
 					if( d < cl.size + userSize )
 					{
+						Toast.makeText( DeathwormActivity.this, "Hit " + cl.name,
+								Toast.LENGTH_SHORT ).show();
+
 						Log.i( LOGTAG, "Hit " + cl );
 					}
 				}
@@ -99,7 +105,7 @@ public class DeathwormActivity extends MapActivity
 
 		Persist.load( this, "default", this );
 
-		loadLocations();
+		refreshLocationFeed();
 	}
 
 	@Override
@@ -144,17 +150,23 @@ public class DeathwormActivity extends MapActivity
 		return false;
 	}
 
-	private void loadLocations()
+	/***/
+	@Variable( "Refresh" )
+	@Summary( "Re-downloads the location feed" )
+	public void refreshLocationFeed()
 	{
-		LocationFeedLoader loader = new LocationFeedLoader( this );
+		LocationFeed.Loader loader = new LocationFeed.Loader( this );
 		loader.execute( locationFeedURL );
 	}
 
-	void setLocations( ContentLocation[] locations )
+	void setLocations( LocationFeed feed )
 	{
-		this.locations = locations;
-		Log.i( LOGTAG, "Loaded " + locations.length + " locations" );
+		locations = feed;
 
-		contentOverlay.setLocations( locations );
+		Toast.makeText( this,
+				"Loaded " + feed.locations.length + " from " + feed.name + " feed",
+				Toast.LENGTH_LONG ).show();
+
+		contentOverlay.setLocations( feed.locations );
 	}
 }
