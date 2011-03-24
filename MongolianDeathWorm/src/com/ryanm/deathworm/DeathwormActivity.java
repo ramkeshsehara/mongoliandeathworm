@@ -3,8 +3,12 @@ package com.ryanm.deathworm;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.KeyEvent;
 
+import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
@@ -25,17 +29,56 @@ public class DeathwormActivity extends MapActivity
 
 	private MyLocationOverlay locationOverlay;
 
+	private ContentOverlay contentOverlay;
+
 	/***/
 	@Variable( "Location Feed" )
 	@Summary( "Where to find a location list" )
-	public String locationFeedURL = null;
+	public String locationFeedURL =
+			"http://mongoliandeathworm.googlecode.com/svn/trunk/MongolianDeathWorm/locations.json";
 
 	/***/
 	@Variable( "User size" )
 	@Summary( "Added to location size to determine a hit" )
 	public int userSize = 10;
 
-	private Location[] locations = new Location[ 0 ];
+	/***/
+	@Variable( "Refresh Delay" )
+	@Summary( "The delay between checking locations" )
+	public float refreshDelay = 3;
+
+	private ContentLocation[] locations = new ContentLocation[ 0 ];
+
+	/**
+	 * Use this to schedule location checks
+	 */
+	private Handler handler = new Handler();
+
+	private Runnable locCheckTask = new Runnable() {
+		@Override
+		public void run()
+		{
+			GeoPoint userLoc = locationOverlay.getMyLocation();
+
+			Log.i( LOGTAG, "Checking locations! " + userLoc );
+
+			if( userLoc != null )
+			{
+				for( ContentLocation cl : locations )
+				{
+					float d = cl.distance( userLoc );
+
+					if( d < cl.size + userSize )
+					{
+						Log.i( LOGTAG, "Hit " + cl );
+					}
+				}
+			}
+
+			handler.postAtTime( locCheckTask, SystemClock.uptimeMillis()
+					+ ( long ) ( refreshDelay * 1000 ) );
+		}
+	};
 
 	/** Called when the activity is first created. */
 	@Override
@@ -48,6 +91,9 @@ public class DeathwormActivity extends MapActivity
 
 		locationOverlay = new MyLocationOverlay( this, map );
 		map.getOverlays().add( locationOverlay );
+
+		contentOverlay = new ContentOverlay( this );
+		map.getOverlays().add( contentOverlay );
 
 		setContentView( map );
 
@@ -62,6 +108,8 @@ public class DeathwormActivity extends MapActivity
 		super.onResume();
 
 		locationOverlay.enableMyLocation();
+
+		handler.post( locCheckTask );
 	}
 
 	@Override
@@ -87,6 +135,7 @@ public class DeathwormActivity extends MapActivity
 		super.onPause();
 
 		locationOverlay.disableMyLocation();
+		handler.removeCallbacks( locCheckTask );
 	}
 
 	@Override
@@ -97,5 +146,15 @@ public class DeathwormActivity extends MapActivity
 
 	private void loadLocations()
 	{
+		LocationFeedLoader loader = new LocationFeedLoader( this );
+		loader.execute( locationFeedURL );
+	}
+
+	void setLocations( ContentLocation[] locations )
+	{
+		this.locations = locations;
+		Log.i( LOGTAG, "Loaded " + locations.length + " locations" );
+
+		contentOverlay.setLocations( locations );
 	}
 }

@@ -2,32 +2,32 @@
     "locations": [
 		{
             "name": "Wolfies",
-            "lat" : 0,
-            "lon" : 0,
+            "lat" : 55564100,
+            "lon" : 3111136,
             "size" : 10,
             "hidden" : false,
             "url" : "http://www.youtube.com/watch?v=c9Lp9p5yjuo"
         },
         {
         	"name": "Chipmunk",
-            "lat" : 0,
-            "lon" : 0,
+            "lat" : 55564005,
+            "lon" : 3111559,
             "size" : 10,
             "hidden" : false,
             "url" : "http://www.youtube.com/watch?v=a1Y73sPHKxw"
         },
         {
         	"name": "OMG cat",
-            "lat" : 0,
-            "lon" : 0,
+            "lat" : 55564361,
+            "lon" : 3111731,
             "size" : 10,
             "hidden" : false,
             "url" : "http://www.youtube.com/watch?v=C_S5cXbXe-4"
         },
         {
         	"name": "OMG kitten",
-            "lat" : 0,
-            "lon" : 0,
+            "lat" : 55564424,
+            "lon" : 3111364,
             "size" : 10,
             "hidden" : false,
             "url" : "http://www.youtube.com/watch?v=xwgdfwvEXvA"
