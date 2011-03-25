@@ -12,6 +12,7 @@ import org.json.JSONObject;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * @author ryanm
@@ -134,6 +135,10 @@ public class LocationFeed
 		@Override
 		protected void onPostExecute( LocationFeed result )
 		{
+			Toast.makeText( activity,
+					"Loaded " + result.locations.length + " from " + result.name + " feed",
+					Toast.LENGTH_LONG ).show();
+
 			activity.setLocations( result );
 		}
 	}

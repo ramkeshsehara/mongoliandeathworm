@@ -19,7 +19,7 @@ import com.google.android.maps.OverlayItem;
 public class ContentLocation extends OverlayItem
 {
 	private final static String LAT = "lat", LON = "lon", SIZE = "size", NAME = "name",
-			HIDDEN = "hidden", URL = "url";
+			HIDDEN = "hidden", URL = "url", ACTIVE = "active";
 
 	/**
 	 * How close the user must be to activate the location, in meters
@@ -53,6 +53,7 @@ public class ContentLocation extends OverlayItem
 		size = json.optInt( SIZE );
 		hidden = json.optBoolean( HIDDEN, false );
 		content = Uri.parse( json.getString( URL ) );
+		active = json.optBoolean( ACTIVE, false );
 	}
 
 	/**
@@ -69,6 +70,7 @@ public class ContentLocation extends OverlayItem
 		json.put( NAME, getTitle() );
 		json.put( HIDDEN, hidden );
 		json.put( URL, content.toString() );
+		json.put( ACTIVE, active );
 
 		return json;
 	}
