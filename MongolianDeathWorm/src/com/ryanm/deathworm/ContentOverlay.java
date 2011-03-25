@@ -1,33 +1,38 @@
 
 package com.ryanm.deathworm;
 
-import java.util.ArrayList;
-
 import android.R;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
 
 import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.OverlayItem;
 
 class ContentOverlay extends ItemizedOverlay
 {
-	private ArrayList<ContentLocation> visibles = new ArrayList<ContentLocation>();
+	private ContentLocation[] locations = new ContentLocation[ 0 ];
+
+	public static Drawable hidden, inactive, active;
+
+	private final Context context;
 
 	ContentOverlay( Context context )
 	{
-		super( boundCenter( context.getResources().getDrawable( R.drawable.star_on ) ) );
+		super( inactive =
+				boundCenter( context.getResources().getDrawable( R.drawable.star_off ) ) );
+
+		this.context = context;
+
+		active = boundCenter( context.getResources().getDrawable( R.drawable.star_on ) );
+		hidden = new ShapeDrawable();
+		hidden.setAlpha( 0 );
 	}
 
 	void setLocations( ContentLocation[] locations )
 	{
-		visibles.clear();
-		for( int i = 0; i < locations.length; i++ )
-		{
-			if( !locations[ i ].hidden )
-			{
-				visibles.add( locations[ i ] );
-			}
-		}
+		this.locations = locations;
 
 		populate();
 	}
@@ -35,12 +40,27 @@ class ContentOverlay extends ItemizedOverlay
 	@Override
 	protected OverlayItem createItem( int i )
 	{
-		return visibles.get( i ).overlayItem;
+		return locations[ i ];
 	}
 
 	@Override
 	public int size()
 	{
-		return visibles.size();
+		return locations.length;
+	}
+
+	@Override
+	protected boolean onTap( int index )
+	{
+		ContentLocation cl = locations[ index ];
+
+		if( cl.active )
+		{
+			context.startActivity( new Intent( Intent.ACTION_VIEW, cl.content ) );
+
+			return true;
+		}
+
+		return false;
 	}
 }

@@ -1,13 +1,14 @@
 
 package com.ryanm.deathworm;
 
+import org.json.JSONException;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.widget.Toast;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -23,6 +24,11 @@ import com.ryanm.preflect.annote.Variable;
  */
 public class DeathwormActivity extends MapActivity
 {
+	/**
+	 * Key for saved location feed data in bundle
+	 */
+	private static final String LOC_FEED_KEY = "locFeed";
+
 	/***/
 	public static final String LOGTAG = "deathworm";
 
@@ -61,23 +67,13 @@ public class DeathwormActivity extends MapActivity
 		{
 			GeoPoint userLoc = locationOverlay.getMyLocation();
 
-			Log.i( LOGTAG, "Checking locations! " + userLoc );
-
 			if( userLoc != null )
 			{
 				map.getController().animateTo( userLoc );
 
 				for( ContentLocation cl : locations.locations )
 				{
-					float d = cl.distance( userLoc );
-
-					if( d < cl.size + userSize )
-					{
-						Toast.makeText( DeathwormActivity.this, "Hit " + cl.name,
-								Toast.LENGTH_SHORT ).show();
-
-						Log.i( LOGTAG, "Hit " + cl );
-					}
+					cl.checkActivation( userLoc, userSize );
 				}
 			}
 
@@ -86,17 +82,19 @@ public class DeathwormActivity extends MapActivity
 		}
 	};
 
-	/** Called when the activity is first created. */
 	@Override
 	public void onCreate( Bundle savedInstanceState )
 	{
 		super.onCreate( savedInstanceState );
+
+		ExceptionHandler.register( this, "therealryan+deathworm@gmail.com" );
 
 		map = new MapView( this, getResources().getString( R.string.debug_maps_api_key ) );
 		map.setClickable( true );
 
 		locationOverlay = new MyLocationOverlay( this, map );
 		map.getOverlays().add( locationOverlay );
+		map.getController().setZoom( 18 );
 
 		contentOverlay = new ContentOverlay( this );
 		map.getOverlays().add( contentOverlay );
@@ -105,7 +103,27 @@ public class DeathwormActivity extends MapActivity
 
 		Persist.load( this, "default", this );
 
-		refreshLocationFeed();
+		if( savedInstanceState != null )
+		{
+			String savedFeed = savedInstanceState.getString( LOC_FEED_KEY );
+			if( savedFeed != null )
+			{
+				try
+				{
+					Log.i( LOGTAG, "loading feed" );
+					setLocations( new LocationFeed( savedFeed ) );
+				}
+				catch( JSONException e )
+				{
+					Log.e( LOGTAG, "Error restoring feed", e );
+				}
+			}
+		}
+
+		if( locations == LocationFeed.empty )
+		{
+			refreshLocationFeed();
+		}
 	}
 
 	@Override
@@ -121,7 +139,7 @@ public class DeathwormActivity extends MapActivity
 	@Override
 	protected void onActivityResult( int requestCode, int resultCode, Intent data )
 	{
-		Preflect.onActivityResult( requestCode, resultCode, data, this );
+		Persist.onActivityResult( requestCode, resultCode, data, this, "default", this );
 	}
 
 	@Override
@@ -129,7 +147,7 @@ public class DeathwormActivity extends MapActivity
 	{
 		if( keyCode == KeyEvent.KEYCODE_MENU )
 		{
-			Preflect.configure( this, this );
+			Preflect.configure( this, false, false, this );
 		}
 
 		return super.onKeyUp( keyCode, event );
@@ -145,6 +163,14 @@ public class DeathwormActivity extends MapActivity
 	}
 
 	@Override
+	protected void onSaveInstanceState( Bundle outState )
+	{
+		Log.i( LOGTAG, "saving feed" );
+
+		outState.putString( LOC_FEED_KEY, locations.encode() );
+	}
+
+	@Override
 	protected boolean isRouteDisplayed()
 	{
 		return false;
@@ -155,6 +181,8 @@ public class DeathwormActivity extends MapActivity
 	@Summary( "Re-downloads the location feed" )
 	public void refreshLocationFeed()
 	{
+		Log.i( LOGTAG, "downloading feed" );
+
 		LocationFeed.Loader loader = new LocationFeed.Loader( this );
 		loader.execute( locationFeedURL );
 	}
@@ -163,10 +191,12 @@ public class DeathwormActivity extends MapActivity
 	{
 		locations = feed;
 
-		Toast.makeText( this,
-				"Loaded " + feed.locations.length + " from " + feed.name + " feed",
-				Toast.LENGTH_LONG ).show();
-
 		contentOverlay.setLocations( feed.locations );
+
+		Log.i( LOGTAG, "Loaded " + feed.locations.length );
+		for( ContentLocation cl : feed.locations )
+		{
+			Log.i( LOGTAG, cl.toString() );
+		}
 	}
 }

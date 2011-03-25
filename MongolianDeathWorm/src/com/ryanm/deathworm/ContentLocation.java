@@ -1,13 +1,12 @@
 
 package com.ryanm.deathworm;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.net.Uri;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.OverlayItem;
@@ -17,25 +16,15 @@ import com.google.android.maps.OverlayItem;
  * 
  * @author ryanm
  */
-public class ContentLocation
+public class ContentLocation extends OverlayItem
 {
 	private final static String LAT = "lat", LON = "lon", SIZE = "size", NAME = "name",
 			HIDDEN = "hidden", URL = "url";
 
 	/**
-	 * The coordinates of the location
-	 */
-	public final GeoPoint location;
-
-	/**
 	 * How close the user must be to activate the location, in meters
 	 */
 	public final int size;
-
-	/**
-	 * The location's name
-	 */
-	public final String name;
 
 	/**
 	 * <code>true</code> if the location is not shown on the map
@@ -45,29 +34,25 @@ public class ContentLocation
 	/**
 	 * The content to show at the location
 	 */
-	public final URL content;
+	public final Uri content;
 
 	/**
-	 * The item to draw on the map
+	 * Is set to <code>true</code> when the user is close enough
 	 */
-	public final OverlayItem overlayItem;
+	public boolean active = false;
 
 	/**
 	 * @param json
 	 * @throws JSONException
-	 * @throws MalformedURLException
 	 */
-	public ContentLocation( JSONObject json ) throws JSONException, MalformedURLException
+	public ContentLocation( JSONObject json ) throws JSONException
 	{
-		int lat = json.getInt( LAT );
-		int lon = json.getInt( LON );
-		location = new GeoPoint( lat, lon );
-		size = json.optInt( SIZE );
-		name = json.getString( NAME );
-		hidden = json.optBoolean( HIDDEN, false );
-		content = new URL( json.getString( URL ) );
+		super( new GeoPoint( json.getInt( LAT ), json.getInt( LON ) ), json
+				.getString( NAME ), null );
 
-		overlayItem = new OverlayItem( location, name, null );
+		size = json.optInt( SIZE );
+		hidden = json.optBoolean( HIDDEN, false );
+		content = Uri.parse( json.getString( URL ) );
 	}
 
 	/**
@@ -78,10 +63,10 @@ public class ContentLocation
 	{
 		JSONObject json = new JSONObject();
 
-		json.put( LAT, location.getLatitudeE6() );
-		json.put( LON, location.getLatitudeE6() );
+		json.put( LAT, getPoint().getLatitudeE6() );
+		json.put( LON, getPoint().getLongitudeE6() );
 		json.put( SIZE, size );
-		json.put( NAME, name );
+		json.put( NAME, getTitle() );
 		json.put( HIDDEN, hidden );
 		json.put( URL, content.toString() );
 
@@ -89,6 +74,18 @@ public class ContentLocation
 	}
 
 	private static float[] results = new float[ 1 ];
+
+	/**
+	 * Activates the location if the user is close enough
+	 * 
+	 * @param user
+	 * @param userSize
+	 */
+	public void checkActivation( GeoPoint user, float userSize )
+	{
+		float distance = distance( user );
+		active = distance <= size + userSize;
+	}
 
 	/**
 	 * Computes the distance from this {@link ContentLocation} to
@@ -99,8 +96,8 @@ public class ContentLocation
 	 */
 	public float distance( GeoPoint point )
 	{
-		double lat1 = location.getLongitudeE6() / 1E6;
-		double lon1 = location.getLatitudeE6() / 1E6;
+		double lat1 = getPoint().getLongitudeE6() / 1E6;
+		double lon1 = getPoint().getLatitudeE6() / 1E6;
 		double lat2 = point.getLongitudeE6() / 1E6;
 		double lon2 = point.getLatitudeE6() / 1E6;
 		Location.distanceBetween( lat1, lon1, lat2, lon2, results );
@@ -108,8 +105,30 @@ public class ContentLocation
 	}
 
 	@Override
+	public Drawable getMarker( int stateBitset )
+	{
+		final Drawable d;
+
+		if( active )
+		{
+			d = ContentOverlay.active;
+		}
+		else if( hidden )
+		{
+			d = ContentOverlay.hidden;
+		}
+		else
+		{
+			d = ContentOverlay.inactive;
+		}
+
+		setState( d, stateBitset );
+		return d;
+	}
+
+	@Override
 	public String toString()
 	{
-		return name + "@" + location + " : " + content;
+		return getTitle() + "@" + getPoint() + " : " + content;
 	}
 }
