@@ -2,9 +2,7 @@
 package com.ryanm.deathworm;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -14,35 +12,34 @@ import org.json.JSONObject;
 
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
+/**
+ * @author ryanm
+ */
 public class LocationFeed
 {
+	/***/
 	public final String name;
 
+	/***/
 	public final String summary;
 
+	/***/
 	public final ContentLocation[] locations;
 
+	/**
+	 * The default, empty, feed
+	 */
 	public final static LocationFeed empty = new LocationFeed();
 
-	public LocationFeed( String feedURL ) throws MalformedURLException, IOException,
-			JSONException
+	/**
+	 * @param jsonString
+	 *           encoded feed data
+	 * @throws JSONException
+	 *            If something goes wrong when parsing the feed data
+	 */
+	public LocationFeed( String jsonString ) throws JSONException
 	{
-		URL url = new URL( feedURL );
-		URLConnection conn = url.openConnection();
-		BufferedReader in =
-				new BufferedReader( new InputStreamReader( conn.getInputStream() ) );
-		StringBuilder jsonString = new StringBuilder();
-
-		String line;
-		while( ( line = in.readLine() ) != null )
-		{
-			jsonString.append( line );
-		}
-
-		in.close();
-
 		JSONObject json = new JSONObject( jsonString.toString() );
 
 		name = json.optString( "name" );
@@ -64,7 +61,39 @@ public class LocationFeed
 		locations = new ContentLocation[ 0 ];
 	}
 
-	static class Loader extends AsyncTask<String, Void, LocationFeed>
+	/**
+	 * @return encoded feed data
+	 */
+	public String encode()
+	{
+		try
+		{
+			JSONObject json = new JSONObject();
+			json.put( "name", name );
+			json.put( "summary", summary );
+
+			JSONArray locs = new JSONArray();
+			for( ContentLocation cl : locations )
+			{
+				locs.put( cl.encode() );
+			}
+
+			json.put( "locations", locs );
+
+			return json.toString();
+		}
+		catch( JSONException e )
+		{
+			Log.e( DeathwormActivity.LOGTAG, "encoding error", e );
+		}
+
+		return "";
+	}
+
+	/**
+	 * Loads a feed from the interwebs
+	 */
+	public static class Loader extends AsyncTask<String, Void, LocationFeed>
 	{
 		private final DeathwormActivity activity;
 
@@ -78,12 +107,24 @@ public class LocationFeed
 		{
 			try
 			{
-				return new LocationFeed( params[ 0 ] );
+				URL url = new URL( params[ 0 ] );
+				URLConnection conn = url.openConnection();
+				BufferedReader in =
+						new BufferedReader( new InputStreamReader( conn.getInputStream() ) );
+				StringBuilder jsonString = new StringBuilder();
+
+				String line;
+				while( ( line = in.readLine() ) != null )
+				{
+					jsonString.append( line );
+				}
+
+				in.close();
+
+				return new LocationFeed( jsonString.toString() );
 			}
 			catch( Exception e )
 			{
-				Toast.makeText( activity, "Error parsing location feed!", Toast.LENGTH_LONG )
-						.show();
 				Log.e( DeathwormActivity.LOGTAG, "doh!", e );
 			}
 
